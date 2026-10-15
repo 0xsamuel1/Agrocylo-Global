@@ -7,8 +7,11 @@ import NavBar from "@/components/NavBar";
 import AnalyticsInit from "@/components/AnalyticsInit";
 import HandoffConsumer from "@/components/HandoffConsumer";
 import PendingTransactionsResolver from "@/components/PendingTransactionsResolver";
-import { redirect } from "next/navigation";
 import { themeBootstrapScript } from "@/theme/theme";
+import { resolveProductionGate } from "@/lib/productionGate";
+import ProductionUnavailable from "@/components/ProductionUnavailable";
+import AnalyticsConsent from "@/components/AnalyticsConsent";
+import PwaSetup from "@/components/PwaSetup";
 
 export const metadata: Metadata = {
   title: "Agro Production",
@@ -43,6 +46,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ThemeProvider>
               <WalletProvider>
                 <AnalyticsInit />
+                <AnalyticsConsent />
+                <PwaSetup />
                 <HandoffConsumer />
                 <PendingTransactionsResolver />
                 <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-background focus:border focus:border-border focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm">

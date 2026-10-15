@@ -28,5 +28,12 @@
   "sso": {
     "connectedWallet": "Billetera Conectada por SSO",
     "autoAuthenticated": "Sesión transferida desde el mercado principal"
+  },
+  "privacy": {
+    "title": "Preferencias de análisis",
+    "description": "¿Permitir análisis anónimos para mejorar Agro Production? Puedes cambiar esta opción cuando quieras.",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "change": "Preferencias de análisis"
   }
 }

@@ -28,5 +28,12 @@
   "sso": {
     "connectedWallet": "SSO Connected Wallet",
     "autoAuthenticated": "Session transferred from main marketplace"
+  },
+  "privacy": {
+    "title": "Analytics preferences",
+    "description": "Allow anonymous analytics to help improve Agro Production? You can change this choice any time.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "change": "Analytics preferences"
   }
 }

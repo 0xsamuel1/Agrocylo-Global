@@ -28,5 +28,12 @@
   "sso": {
     "connectedWallet": "Portefeuille Connecté par SSO",
     "autoAuthenticated": "Session transférée depuis le marché principal"
+  },
+  "privacy": {
+    "title": "Préférences analytiques",
+    "description": "Autorisez les analyses anonymes pour améliorer Agro Production ? Vous pouvez modifier ce choix à tout moment.",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "change": "Préférences analytiques"
   }
 }
