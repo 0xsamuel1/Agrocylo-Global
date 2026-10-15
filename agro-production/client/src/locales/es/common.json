@@ -28,5 +28,23 @@
   "sso": {
     "connectedWallet": "Billetera Conectada por SSO",
     "autoAuthenticated": "Sesión transferida desde el mercado principal"
+  },
+  "errors": {
+    "boundary": {
+      "title": "Algo salió mal",
+      "description": "Esta página encontró un error inesperado. Ya se ha notificado. Puedes intentarlo de nuevo o volver a la página de inicio.",
+      "retry": "Intentar de nuevo",
+      "home": "Ir al inicio",
+      "reference": "Referencia",
+      "details": "Detalles del error (solo desarrollo)"
+    },
+    "notFound": {
+      "title": "Página no encontrada",
+      "description": "La página que buscas no existe o puede haberse movido.",
+      "home": "Ir al inicio",
+      "marketplace": "Explorar el mercado",
+      "campaigns": "Ver campañas",
+      "linksLabel": "Enlaces útiles"
+    }
   }
 }

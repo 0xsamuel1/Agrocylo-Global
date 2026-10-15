@@ -7,7 +7,8 @@ import NavBar from "@/components/NavBar";
 import AnalyticsInit from "@/components/AnalyticsInit";
 import HandoffConsumer from "@/components/HandoffConsumer";
 import PendingTransactionsResolver from "@/components/PendingTransactionsResolver";
-import { redirect } from "next/navigation";
+import { resolveProductionGate } from "@/lib/productionGate";
+import ProductionUnavailable from "@/components/ProductionUnavailable";
 import { themeBootstrapScript } from "@/theme/theme";
 
 export const metadata: Metadata = {
