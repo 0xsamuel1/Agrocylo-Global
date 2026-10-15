@@ -3,7 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../config/database.js', () => ({
   prisma: {
     $transaction: vi.fn(),
-    product: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn(), create: vi.fn(), update: vi.fn() },
+    product: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     priceHistory: { findMany: vi.fn() },
   },
 }));
@@ -208,9 +214,7 @@ describe('getSuggestedPrice', () => {
 
   it('has no suggestion for a single past sale', async () => {
     mockFindUnique.mockResolvedValueOnce({ ...SAMPLE_PRODUCT, category: 'Vegetables' } as any);
-    mockPriceHistoryFindMany.mockResolvedValueOnce([
-      { price: '500', currency: 'USDC' },
-    ] as any);
+    mockPriceHistoryFindMany.mockResolvedValueOnce([{ price: '500', currency: 'USDC' }] as any);
 
     const result = await getSuggestedPrice('prod-1', '0xfarmer');
 
@@ -271,7 +275,7 @@ describe('getSuggestedPrice', () => {
             unit: 'kg',
           },
         },
-      }),
+      })
     );
   });
 
@@ -305,7 +309,7 @@ describe('getSuggestedPrice', () => {
             unit: 'kg',
           },
         },
-      }),
+      })
     );
   });
 
@@ -325,7 +329,177 @@ describe('getSuggestedPrice', () => {
             unit: 'kg',
           },
         },
-      }),
+      })
     );
+  });
+});
+
+// ── GET /products query contract (Issue #1145) ──────────────────────────────
+// Pins the Prisma query each documented filter, sort and paging input
+// produces, so a renamed or dropped parameter fails here instead of silently
+// returning an unfiltered list.
+describe('listProducts query contract (#1145)', () => {
+  const whereOf = () => mockFindMany.mock.calls[0]![0]!.where;
+  const queryOf = () => mockFindMany.mock.calls[0]![0]!;
+
+  beforeEach(() => {
+    mockTransaction.mockResolvedValue([0, []] as any);
+  });
+
+  it('defaults to available products only', async () => {
+    await listProducts({});
+    expect(whereOf()).toEqual({ isAvailable: true });
+    expect(mockCount).toHaveBeenCalledWith({ where: { isAvailable: true } });
+  });
+
+  it('include_unavailable drops the availability filter', async () => {
+    await listProducts({ includeUnavailable: true });
+    expect(whereOf()).toEqual({});
+  });
+
+  it('search matches name, description or category case-insensitively', async () => {
+    await listProducts({ search: 'Tomato' });
+    expect(whereOf()).toEqual({
+      isAvailable: true,
+      OR: [
+        { name: { contains: 'Tomato', mode: 'insensitive' } },
+        { description: { contains: 'Tomato', mode: 'insensitive' } },
+        { category: { contains: 'Tomato', mode: 'insensitive' } },
+      ],
+    });
+  });
+
+  it('category is an exact match', async () => {
+    await listProducts({ category: 'Vegetables' });
+    expect(whereOf()).toEqual({ isAvailable: true, category: 'Vegetables' });
+  });
+
+  it('farmer (seller) is matched on the lower-cased wallet', async () => {
+    await listProducts({ farmer: 'GFARMERWALLET' });
+    expect(whereOf()).toEqual({ isAvailable: true, farmerWallet: 'gfarmerwallet' });
+  });
+
+  it('location is a case-insensitive substring match', async () => {
+    await listProducts({ location: 'Lagos' });
+    expect(whereOf()).toEqual({
+      isAvailable: true,
+      location: { contains: 'Lagos', mode: 'insensitive' },
+    });
+  });
+
+  it('minPrice alone applies a lower bound', async () => {
+    await listProducts({ minPrice: '10' });
+    expect(whereOf().pricePerUnit).toEqual({ gte: expect.anything() });
+    expect(String(whereOf().pricePerUnit.gte)).toBe('10');
+  });
+
+  it('maxPrice alone applies an upper bound', async () => {
+    await listProducts({ maxPrice: '99.5' });
+    expect(whereOf().pricePerUnit).toEqual({ lte: expect.anything() });
+    expect(String(whereOf().pricePerUnit.lte)).toBe('99.5');
+  });
+
+  it('minPrice and maxPrice together form an inclusive range', async () => {
+    await listProducts({ minPrice: '10', maxPrice: '20' });
+    const range = whereOf().pricePerUnit;
+    expect(String(range.gte)).toBe('10');
+    expect(String(range.lte)).toBe('20');
+  });
+
+  it('ignores non-numeric price bounds rather than failing the request', async () => {
+    await listProducts({ minPrice: 'cheap', maxPrice: 'abc' });
+    expect(whereOf()).toEqual({ isAvailable: true });
+  });
+
+  it('combines every filter in one query', async () => {
+    await listProducts({
+      farmer: 'GF',
+      category: 'Grains',
+      search: 'rice',
+      location: 'Kano',
+      minPrice: '1',
+      maxPrice: '5',
+    });
+    const where = whereOf();
+    expect(where).toMatchObject({
+      isAvailable: true,
+      farmerWallet: 'gf',
+      category: 'Grains',
+      location: { contains: 'Kano', mode: 'insensitive' },
+    });
+    expect(where.OR).toHaveLength(3);
+    expect(where.pricePerUnit).toHaveProperty('gte');
+    expect(where.pricePerUnit).toHaveProperty('lte');
+  });
+
+  it('count and page use the same filter', async () => {
+    await listProducts({ category: 'Fruit', search: 'mango' });
+    expect(mockCount.mock.calls[0]![0]!.where).toEqual(whereOf());
+  });
+
+  describe('sorting', () => {
+    it('orders newest first (the only sort the server implements today)', async () => {
+      await listProducts({});
+      expect(queryOf().orderBy).toEqual({ createdAt: 'desc' });
+    });
+
+    // The client sends `sort` (newest | price-asc | price-desc | rating |
+    // distance | popular) but the route does not read it yet. Tracked by #1132.
+    it.todo('price-asc orders by pricePerUnit ascending (#1132)');
+    it.todo('price-desc orders by pricePerUnit descending (#1132)');
+    it.todo('rating, distance and popular sorts (#1132)');
+  });
+
+  describe('pagination', () => {
+    it('defaults to page 1 of 20', async () => {
+      await listProducts({});
+      expect(queryOf()).toMatchObject({ take: 20, skip: 0 });
+    });
+
+    it('skips (page - 1) * page_size rows', async () => {
+      await listProducts({ page: '3', pageSize: '10' });
+      expect(queryOf()).toMatchObject({ take: 10, skip: 20 });
+    });
+
+    it.each(['0', '-1', 'abc', ''])('falls back to page 1 for page=%j', async (page) => {
+      const result = await listProducts({ page });
+      expect(result.page).toBe(1);
+      expect(queryOf().skip).toBe(0);
+    });
+
+    it.each(['0', '-5', 'x'])('falls back to 20 for page_size=%j', async (pageSize) => {
+      const result = await listProducts({ pageSize });
+      expect(result.page_size).toBe(20);
+      expect(queryOf().take).toBe(20);
+    });
+
+    it('accepts page_size exactly at the 100 cap', async () => {
+      const result = await listProducts({ pageSize: '100' });
+      expect(result.page_size).toBe(100);
+      expect(queryOf().take).toBe(100);
+    });
+
+    it('caps page_size at 100', async () => {
+      await listProducts({ pageSize: '101' });
+      expect(queryOf().take).toBe(100);
+    });
+
+    it('reports totalPages rounded up', async () => {
+      mockTransaction.mockResolvedValue([41, []] as any);
+      const result = await listProducts({ pageSize: '20' });
+      expect(result).toMatchObject({ total: 41, totalPages: 3 });
+    });
+
+    it('reports zero pages for an empty result', async () => {
+      const result = await listProducts({});
+      expect(result).toMatchObject({ total: 0, totalPages: 0, items: [] });
+    });
+
+    it('returns an empty page past the last one without clamping', async () => {
+      mockTransaction.mockResolvedValue([5, []] as any);
+      const result = await listProducts({ page: '9', pageSize: '5' });
+      expect(result).toMatchObject({ page: 9, total: 5, totalPages: 1, items: [] });
+      expect(queryOf().skip).toBe(40);
+    });
   });
 });

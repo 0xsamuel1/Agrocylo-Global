@@ -32,7 +32,7 @@ const PACKAGES = ["react", "react-dom"];
 
 const USAGE = `Usage: node scripts/check-react-runtime.js [--lockfile <path>]
 
-Fails if the lockfile resolves more than one version of ${PACKAGES.join(" or ")}.
+Fails if the lockfile resolves more than one copy of ${PACKAGES.join(" or ")}.
 `;
 
 /** Collect every resolved version of `name` in a lockfile's `packages` map. */
@@ -114,6 +114,23 @@ function main() {
     }
 
     const [version, paths] = [...versions.entries()][0];
+
+    // Issue #1089: one version installed at several paths is still several
+    // module instances (and dispatchers) -- e.g. a workspace-local copy next
+    // to the hoisted root copy.
+    if (paths.length > 1) {
+      process.stderr.write(`FAIL: ${name}@${version} is installed ${paths.length} times (#1089)\n`);
+      for (const pkgPath of paths) {
+        process.stderr.write(`    ${pkgPath}\n`);
+      }
+      process.stderr.write(
+        `\nEach copy is a separate module instance with its own dispatcher. Run\n` +
+          `"npm install && npm dedupe" with npm 10.9.x so npm hoists one copy.\n`,
+      );
+      failed = true;
+      continue;
+    }
+
     process.stdout.write(`ok: single ${name}@${version}\n`);
     for (const pkgPath of paths) {
       process.stdout.write(`  ${pkgPath}\n`);
