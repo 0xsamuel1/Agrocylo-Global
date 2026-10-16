@@ -82,7 +82,7 @@ function RecoveryCard({
       </div>
       {action && actionLabel && (
         <Button
-          id={${id}-action}
+          id={`${id}-action`}
           onClick={action}
           disabled={loading}
           className="gap-2"
