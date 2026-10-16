@@ -110,7 +110,7 @@ function PendingIndexRow({ txHash }: { txHash?: string }) {
         <p className="text-muted-foreground text-xs">
           {txHash ? (
             <a
-              href={https://stellar.expert/explorer/testnet/tx/}
+              href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
               target="_blank"
               rel="noreferrer"
               className="underline"
@@ -169,24 +169,24 @@ function DashboardContent() {
   const stats = [
     {
       label: "Total Revenue",
-      value: ${totalRevenue.toFixed(2)} XLM,
+      value: `${totalRevenue.toFixed(2)} XLM`,
       icon: DollarSign,
       change:
         completed.length > 0
-          ? ${completed.length} completed orders
+          ? `${completed.length} completed orders`
           : "No completed orders yet",
     },
     {
       label: "Active Products",
       value: products.filter((p) => p.is_available).length,
       icon: Package,
-      change: ${products.length} total listed,
+      change: `${products.length} total listed`,
     },
     {
       label: "Total Orders",
       value: orders.length,
       icon: ShoppingBag,
-      change: ${pending.length} awaiting confirmation,
+      change: `${pending.length} awaiting confirmation`,
     },
     {
       label: "Pending Orders",
