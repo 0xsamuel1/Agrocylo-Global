@@ -192,6 +192,13 @@ jobs:
       # agro-production/client and packages/*. Install runs once at the repo
       # root; every other step below still runs scoped to client/ via this
       # job's `defaults.run.working-directory`.
+      # Issue #1089: exactly one react/react-dom may be resolved, or every
+      # component test fails with "Invalid hook call". Reads only the
+      # lockfile, so it gates before the install.
+      - name: Single React runtime
+        working-directory: .
+        run: node scripts/check-react-runtime.js
+
       - name: Install dependencies
         working-directory: .
         run: npm ci
@@ -447,6 +454,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: package-lock.json
+
+      # Issue #1089: exactly one react/react-dom may be resolved, or every
+      # component test fails with "Invalid hook call". Reads only the
+      # lockfile, so it gates before the install.
+      - name: Single React runtime
+        working-directory: .
+        run: node scripts/check-react-runtime.js
 
       # Issue #755: same root-workspace install as the client job above.
       - name: Install dependencies

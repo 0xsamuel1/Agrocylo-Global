@@ -29,11 +29,22 @@
     "connectedWallet": "SSO Connected Wallet",
     "autoAuthenticated": "Session transferred from main marketplace"
   },
-  "privacy": {
-    "title": "Analytics preferences",
-    "description": "Allow anonymous analytics to help improve Agro Production? You can change this choice any time.",
-    "accept": "Accept",
-    "decline": "Decline",
-    "change": "Analytics preferences"
+  "errors": {
+    "boundary": {
+      "title": "Something went wrong",
+      "description": "This page hit an unexpected error. It has been reported. You can try again or go back to the home page.",
+      "retry": "Try again",
+      "home": "Go home",
+      "reference": "Reference",
+      "details": "Error details (development only)"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you're looking for doesn't exist or may have been moved.",
+      "home": "Go home",
+      "marketplace": "Browse the marketplace",
+      "campaigns": "View campaigns",
+      "linksLabel": "Helpful links"
+    }
   }
 }

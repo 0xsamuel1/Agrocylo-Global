@@ -42,14 +42,17 @@ const updateLocationSchema = z
 
 // `z.object(...).required()` was removed in Zod 4 and never applied to the
 // transform pipeline above anyway, so the two accepted create shapes are built
-// by extending the base object with the required coordinate pair.
-const createLocationSchema = z
-  .object(locationShape)
+// by extending the base object with the required coordinate pair. The base
+// must be partial: extending the full shape required *both* coordinate pairs
+// plus city/country/is_public, rejecting every real client payload.
+const optionalLocationFields = z.object(locationShape).partial();
+const createLocationSchema = optionalLocationFields
   .extend({ lat: locationShape.lat, lng: locationShape.lng })
   .or(
-    z
-      .object(locationShape)
-      .extend({ latitude: locationShape.latitude, longitude: locationShape.longitude })
+    optionalLocationFields.extend({
+      latitude: locationShape.latitude,
+      longitude: locationShape.longitude,
+    })
   )
   .transform((value) => {
     const lat = value.lat ?? value.latitude;
@@ -127,6 +130,18 @@ export async function setLocation(walletAddress: string, body: unknown) {
     create: { walletAddress, ...parsed.data },
     update: parsed.data,
   });
+}
+
+export async function getLocationByWallet(walletAddress: string) {
+  const location = await prisma.location.findUnique({ where: { walletAddress } });
+  if (!location)
+    throw new ApiError(
+      404,
+      'Not Found',
+      'No saved location for this wallet',
+      'https://cylos.io/errors/not-found'
+    );
+  return location;
 }
 
 export async function updateLocation(wallet_address: string, requester: string, body: unknown) {

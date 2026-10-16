@@ -5,8 +5,7 @@
  * Tests for scripts/check-react-runtime.js (issue #1041).
  *
  * Exercises the duplicate-runtime detection against synthetic lockfiles, so the
- * guard's pass/fail behaviour is pinned without depending on the real lockfile
- * -- which the overrides make pass only after `npm install` regenerates it.
+ * guard's pass/fail behaviour is pinned without depending on the real lockfile.
  */
 
 const test = require("node:test");
@@ -83,6 +82,23 @@ test("fails when react-dom resolves to two versions", () => {
     const result = runCheck(file);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /react-dom resolves to 2 versions/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("fails when one version is installed at more than one path", () => {
+  const { dir, file } = writeLockfile({
+    "": { name: "root" },
+    "node_modules/react": { version: "19.2.3" },
+    "client/node_modules/react": { version: "19.2.3" },
+    "node_modules/react-dom": { version: "19.2.3" },
+  });
+  try {
+    const result = runCheck(file);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /react@19\.2\.3 is installed 2 times/);
+    assert.match(result.stderr, /client\/node_modules\/react/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
